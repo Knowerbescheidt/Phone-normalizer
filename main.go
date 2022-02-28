@@ -6,7 +6,7 @@ import (
 	"regexp"
 
 	//import runs init function which is necessary to register this db driver
-	"db"
+	phonedb "github.com/Knowerbescheidt/Phone-normalizer/db"
 
 	_ "github.com/lib/pq"
 )
@@ -22,10 +22,16 @@ const (
 //11:26 inserting records
 
 func main() {
+	//reset db
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s sslmode=disable", host, port, user, password)
-	must(db.Reset("postgres", psqlInfo, dbname))
+	must(phonedb.Reset("postgres", psqlInfo, dbname))
 
-	must(createPHTable(db))
+	//minute 7
+	must(phonedb.Migrate("postgresql", psqlInfo))
+
+	//open db db
+	psqlInfo = fmt.Sprintf("%s dbname=%s", psqlInfo, dbname)
+	db, err := sql.Open("postgres", psqlInfo)
 
 	_, err = insertPhoneN(db, "1234567890")
 	must(err)
@@ -156,16 +162,6 @@ func insertPhoneN(db *sql.DB, phone string) (int, error) {
 	}
 	//psql returned nicht automatisch ie id wenn geinserted wird
 	return id, nil
-}
-
-func createPHTable(db *sql.DB) error {
-	statement := `
-	CREATE TABLE IF NOT EXISTS phone_numbers (
-		id SERIAL,
-		value VARCHAR(255)
-	)`
-	_, err := db.Exec(statement)
-	return err
 }
 
 // my own working solution
