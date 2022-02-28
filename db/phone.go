@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 
 	_ "github.com/lib/pq"
 )
@@ -126,17 +127,29 @@ func allPhones(db *sql.DB) ([]Phone, error) {
 
 }
 
-func findPhone(db *sql.DB, number string) (*Phone, error) {
+func (db *DB) FindPhone(number string) (*Phone, error) {
 	statement := "SELECT * FROM phone_numbers WHERE value=$1"
 	var p Phone
-	row := db.QueryRow(statement, number)
+	row := db.db.QueryRow(statement, number)
 	err := row.Scan(&p.Id, &p.Value)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, nil
+			return nil, errors.New("no rows to be found")
 		} else {
 			return nil, err
 		}
 	}
 	return &p, nil
+}
+
+func (db *DB) UpdatePhone(p *Phone) error {
+	statement := "UPDATE phone_numbers SET value=$2 WHERE id=$1"
+	_, err := db.db.Exec(statement, p.Id, p.Value)
+	return err
+}
+
+func (db *DB) DeletePhone(id int) error {
+	statement := "DELETE FROM phone_numbers WHERE id=$1"
+	_, err := db.db.Exec(statement, id)
+	return err
 }

@@ -27,7 +27,7 @@ func main() {
 	must(phonedb.Reset("postgres", psqlInfo, dbname))
 
 	//minute 7
-	must(phonedb.Migrate("postgresql", psqlInfo))
+	must(phonedb.Migrate("postgres", psqlInfo))
 
 	db, err := phonedb.Open("postgres", psqlInfo)
 	must(err)
@@ -43,15 +43,15 @@ func main() {
 		number := normalize(p.Value)
 		if number != p.Value {
 			fmt.Println("Updating or removing...", number)
-			// existing, err := findPhone(db, number)
-			// must(err)
-			// if existing != nil {
-			// 	must(deletePhone(db, p.Id))
-			// } else {
-			// 	p.Value = number
-			// 	err := updatePhone(db, p)
-			// 	must(err)
-			// }
+			existing, err := db.FindPhone(number)
+			must(err)
+			if existing != nil {
+				must(db.DeletePhone(p.Id))
+			} else {
+				p.Value = number
+				err := db.UpdatePhone(p)
+				must(err)
+			}
 
 		} else {
 			fmt.Println("No changes required!")
@@ -78,18 +78,6 @@ func getPhone(db *sql.DB, id int) (string, error) {
 		return "", err
 	}
 	return phoneNumber, nil
-}
-
-// func updatePhone(db *sql.DB, p phone) error {
-// 	statement := "UPDATE phone_numbers SET value=$2 WHERE id=$1"
-// 	_, err := db.Exec(statement, p.Id, p.Value)
-// 	return err
-// }
-
-func deletePhone(db *sql.DB, id int) error {
-	statement := "DELETE FROM phone_numbers WHERE id=$1"
-	_, err := db.Exec(statement, id)
-	return err
 }
 
 // my own working solution
