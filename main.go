@@ -37,6 +37,9 @@ func main() {
 
 	//run normalizer
 	phones, err := db.AllPhones()
+	must(err)
+
+	//iterate through phones
 	for _, p := range phones {
 		fmt.Printf("Working on... %+v\n", p)
 		number := normalize(p.Value)
