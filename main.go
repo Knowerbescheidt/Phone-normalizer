@@ -1,13 +1,11 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"regexp"
 
-	//import runs init function which is necessary to register this db driver
 	phonedb "github.com/Knowerbescheidt/Phone-normalizer/db"
-
+	//import runs init function which is necessary to register this db driver
 	_ "github.com/lib/pq"
 )
 
@@ -19,24 +17,25 @@ const (
 	dbname   = "gophercise_db"
 )
 
-//11:26 inserting records
-
 func main() {
 	//reset db
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s sslmode=disable", host, port, user, password)
 	must(phonedb.Reset("postgres", psqlInfo, dbname))
 
-	//minute 7
+	//migrate db
 	must(phonedb.Migrate("postgres", psqlInfo))
 
+	//open connection to db
 	db, err := phonedb.Open("postgres", psqlInfo)
 	must(err)
 	defer db.Close()
 
+	//insert sample data
 	if err := db.Seed(); err != nil {
 		panic(err)
 	}
 
+	//run normalizer
 	phones, err := db.AllPhones()
 	for _, p := range phones {
 		fmt.Printf("Working on... %+v\n", p)
@@ -49,7 +48,7 @@ func main() {
 				must(db.DeletePhone(p.Id))
 			} else {
 				p.Value = number
-				err := db.UpdatePhone(p)
+				err := db.UpdatePhone(&p)
 				must(err)
 			}
 
@@ -59,44 +58,15 @@ func main() {
 	}
 }
 
+//helper function
 func must(err error) {
 	if err != nil {
 		panic(err)
 	}
 }
 
-func dropDB(db *sql.DB, name string) error {
-	_, err := db.Exec("DROP DATABASE " + name)
-	return err
-}
-
-func getPhone(db *sql.DB, id int) (string, error) {
-	statement := "SELECT value FROM phone_numbers WHERE id=$1"
-	var phoneNumber string
-	err := db.QueryRow(statement, id).Scan(&phoneNumber)
-	if err != nil {
-		return "", err
-	}
-	return phoneNumber, nil
-}
-
-// my own working solution
-// func normalize(tn string) string {
-// 	r := strings.NewReplacer(" ", "", "(", "", ")", "", "-", "")
-// 	tn = r.Replace(tn)
-// 	return tn
-// }
-
+//normalize function
 func normalize(tn string) string {
 	re := regexp.MustCompile("[^0-9]")
 	return re.ReplaceAllString(tn, "")
-
-	// //bytes buffer is very strong in performance
-	// var buf bytes.Buffer
-	// for _, ch := range tn {
-	// 	if ch >= '1' && ch <= '9' {
-	// 		buf.WriteRune(ch)
-	// 	}
-	// }
-	// return buf.String()
 }

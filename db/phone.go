@@ -2,7 +2,6 @@ package db
 
 import (
 	"database/sql"
-	"errors"
 
 	_ "github.com/lib/pq"
 )
@@ -134,7 +133,7 @@ func (db *DB) FindPhone(number string) (*Phone, error) {
 	err := row.Scan(&p.Id, &p.Value)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, errors.New("no rows to be found")
+			return nil, nil
 		} else {
 			return nil, err
 		}
